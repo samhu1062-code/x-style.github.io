@@ -1,1 +1,309 @@
 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>外箱尺寸计算器</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 640px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f0f4f8;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e0e6ed;
+        }
+        .title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .company-info {
+            line-height: 1.3;
+        }
+        .company {
+            font-size: 24px;
+            color: #2c3e50;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .department {
+            font-size: 18px;
+            color: #4a5568;
+            margin-top: 4px;
+        }
+        h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #2c3e50;
+            white-space: nowrap;
+            padding-left: 30px;
+        }
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+        }
+        label {
+            width: 160px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+        input[type="number"] {
+            width: 120px;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        input[type="number"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+            display: block;
+            margin: 25px auto 0;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        #result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            color: #4a5568;
+        }
+        #result p {
+            margin: 12px 0;
+            line-height: 1.6;
+        }
+        #result strong {
+            color: #2c3e50;
+        }
+        .error {
+            color: #e74c3c;
+            font-weight: 500;
+        }
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+                margin: 20px auto;
+            }
+            .container {
+                padding: 20px;
+            }
+            h2 {
+                font-size: 20px;
+                padding-left: 15px;
+            }
+            .company {
+                font-size: 20px;
+            }
+            .department {
+                font-size: 16px;
+            }
+            .input-group {
+                flex-wrap: wrap;
+            }
+            label {
+                width: 100%;
+                margin-bottom: 4px;
+            }
+            input[type="number"] {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title-container">
+            <div class="company-info">
+                <div class="company">华森制药</div>
+                <div class="department">技术支持转移部</div>
+            </div>
+            <h2>外箱尺寸计算器</h2>
+        </div>
+        <div class="input-group">
+            <label>小盒长度 (mm):</label>
+            <input type="number" id="length" step="1" required>
+        </div>
+        <div class="input-group">
+            <label>小盒宽度 (mm):</label>
+            <input type="number" id="width" step="1" required>
+        </div>
+        <div class="input-group">
+            <label>小盒高度 (mm):</label>
+            <input type="number" id="height" step="1" required>
+        </div>
+        <div class="input-group">
+            <label>小盒数量:</label>
+            <input type="number" id="quantity" min="1" required>
+        </div>
+        <div class="input-group">
+            <label>厚度补偿 (mm):</label>
+            <input type="number" id="padding" step="0.5" min="0" value="7.5">
+        </div>
+        <button onclick="calculate()">立即计算</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function calculate() {
+            const l = parseFloat(document.getElementById('length').value);
+            const w = parseFloat(document.getElementById('width').value);
+            const h = parseFloat(document.getElementById('height').value);
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const padding = parseFloat(document.getElementById('padding').value);
+
+            // 输入验证
+            if ([l, w, h, quantity, padding].some(v => isNaN(v) || v <= 0)) {
+                document.getElementById('result').innerHTML = '<p class="error">⚠️ 请填写有效的正数！</p>';
+                return;
+            }
+
+            const result = calculateOptimalBox(l, w, h, quantity, padding);
+            const resultDiv = document.getElementById('result');
+            
+            if (result) {
+                resultDiv.innerHTML = formatResult(result);
+            } else {
+                resultDiv.innerHTML = '<p class="error">⚠️ 无法找到有效排列方案，请调整参数！</p>';
+            }
+        }
+
+        function formatResult(result) {
+            const [L, W, H] = result.dimensions;
+            return `
+                <p><strong>📦 外箱尺寸：</strong>${L} × ${W} × ${H} mm</p>
+                <p><strong>📐 外箱表面积：</strong>${result.surfaceArea.toLocaleString()} mm² (≈ ${(result.surfaceArea / 1000000).toFixed(3)} m²)</p>
+                <p><strong>📊 体积：</strong>${result.volume.toLocaleString()} mm³ (≈ ${(result.volume / 1000000000).toFixed(3)} m³)</p>
+                <p><strong>🔢 排列方式：</strong>${result.layout[0]} 行 × ${result.layout[1]} 列 × ${result.layout[2]} 层</p>
+                <p><strong>📦 每层数量：</strong>${result.layout[0] * result.layout[1]} 个（共 ${result.layout[2]} 层）</p>
+                <p><strong>📏 小盒方向：</strong>长 ${result.orientation[0]}mm × 宽 ${result.orientation[1]}mm × 高 ${result.orientation[2]}mm</p>
+                <p style="color:#7f8c8d;font-size:13px;margin-top:10px;">💡 外箱尺寸 = 小盒排列尺寸 + 2 × 厚度补偿</p>`;
+        }
+
+        function calculateOptimalBox(l, w, h, quantity, padding) {
+            let best = null;
+            const orientations = getUniqueOrientations(l, w, h);
+            
+            orientations.forEach(([currentL, currentW, currentH]) => {
+                // 获取所有可能的排列组合
+                const combos = getValidCombinations(quantity);
+                
+                combos.forEach(([x, y, z]) => {
+                    // 计算外箱尺寸（加上厚度补偿）
+                    const boxL = currentL * x + 2 * padding;
+                    const boxW = currentW * y + 2 * padding;
+                    const boxH = currentH * z + 2 * padding;
+                    
+                    // 表面积 = 2(LW + LH + WH)
+                    const surfaceArea = 2 * (boxL * boxW + boxL * boxH + boxW * boxH);
+                    const volume = boxL * boxW * boxH;
+                    
+                    // 选择表面积最小的方案（若表面积相同则选体积更小的）
+                    if (!best || surfaceArea < best.surfaceArea || 
+                       (Math.abs(surfaceArea - best.surfaceArea) < 0.001 && volume < best.volume)) {
+                        best = {
+                            dimensions: [roundTo(boxL, 1), roundTo(boxW, 1), roundTo(boxH, 1)],
+                            surfaceArea: Math.round(surfaceArea),
+                            volume: Math.round(volume),
+                            layout: [x, y, z],
+                            orientation: [currentL, currentW, currentH]
+                        };
+                    }
+                });
+            });
+            return best;
+        }
+
+        // 辅助函数：四舍五入到指定位数
+        function roundTo(num, decimals) {
+            const factor = Math.pow(10, decimals);
+            return Math.round(num * factor) / factor;
+        }
+
+        function getUniqueOrientations(l, w, h) {
+            const unique = new Set();
+            const all = [
+                [l, w, h], [l, h, w],
+                [w, l, h], [w, h, l],
+                [h, l, w], [h, w, l]
+            ];
+            all.forEach(arr => {
+                unique.add(arr.join('|'));
+            });
+            return Array.from(unique).map(str => str.split('|').map(Number));
+        }
+
+        function getValidCombinations(n) {
+            const combinations = new Set();
+            // 优化搜索范围：最大维度不超过数量本身
+            const maxDim = n;
+            
+            for (let x = 1; x <= maxDim; x++) {
+                if (n % x !== 0) continue;
+                const remaining = n / x;
+                
+                for (let y = 1; y <= remaining; y++) {
+                    if (remaining % y !== 0) continue;
+                    const z = remaining / y;
+                    
+                    // 只存储标准排序，避免重复
+                    const sorted = [x, y, z].sort((a, b) => a - b);
+                    combinations.add(sorted.join('|'));
+                }
+            }
+            
+            // 返回所有排列
+            const result = [];
+            combinations.forEach(str => {
+                const [a, b, c] = str.split('|').map(Number);
+                // 生成6种排列
+                const perms = [
+                    [a, b, c], [a, c, b],
+                    [b, a, c], [b, c, a],
+                    [c, a, b], [c, b, a]
+                ];
+                perms.forEach(p => {
+                    result.push(p);
+                });
+            });
+            
+            return result;
+        }
+
+        // 按 Enter 键触发计算
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const inputs = ['length', 'width', 'height', 'quantity', 'padding'];
+                if (inputs.includes(e.target.id)) {
+                    calculate();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
